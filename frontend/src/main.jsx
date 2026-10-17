@@ -5,6 +5,7 @@ import './style.css';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5080';
 function App() {
   const [lang, setLang] = useState('en');
+  const [theme, setTheme] = useState(localStorage.getItem('book-discovery-theme') || 'light');
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#');
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState('');
@@ -17,6 +18,11 @@ function App() {
   const [recommendations, setRecommendations] = useState([]);
   const [genres, setGenres] = useState([]);
   const [newBook, setNewBook] = useState({ title: '', titleAr: '', author: '', description: '', genreId: '', readingUrl: '', readingSource: '' });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('book-discovery-theme', theme);
+  }, [theme]);
+
   const ar = lang === 'ar';
   const t = (en, arabic) => ar ? arabic : en;
   const isAdmin = (() => {
@@ -100,7 +106,7 @@ function App() {
   return <div className={ar ? 'app rtl' : 'app'} dir={ar ? 'rtl' : 'ltr'}>
     <header className="topbar"><a className="brand" href="#"><span className="brand-icon">B</span> Book<span>Discovery</span></a>
       <nav><a href="#discover">{t('Discover', 'اكتشف')}</a><a href="#recommendations">{t('For you', 'لك')}</a></nav>
-      <div className="top-actions"><button className="lang" onClick={() => setLang(ar ? 'en' : 'ar')}>{ar ? 'English' : 'العربية'}</button>{token ? <button className="outline" onClick={() => { localStorage.removeItem('token'); setToken(''); setRecommendations([]); setMessage(t('Signed out', 'تم تسجيل الخروج')); }}>{t('Sign out', 'تسجيل الخروج')}</button> : <a href="#account" className="sign-link">{t('Sign in', 'دخول')}</a>}</div>
+      <div className="top-actions"><button className="lang" onClick={() => setLang(ar ? 'en' : 'ar')}>{ar ? 'English' : 'العربية'}</button><button className="theme-toggle" type="button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? t('Switch to light mode', 'التبديل للوضع الفاتح') : t('Switch to dark mode', 'التبديل للوضع الداكن')}>{theme === 'dark' ? '☀️' : '🌙'} <span>{theme === 'dark' ? t('Light', 'فاتح') : t('Dark', 'داكن')}</span></button>{token ? <button className="outline" onClick={() => { localStorage.removeItem('token'); setToken(''); setRecommendations([]); setMessage(t('Signed out', 'تم تسجيل الخروج')); }}>{t('Sign out', 'تسجيل الخروج')}</button> : <a href="#account" className="sign-link">{t('Sign in', 'دخول')}</a>}</div>
     </header>
     <main>
       <section className="hero"><div className="hero-content"><span className="eyebrow">{t('YOUR NEXT CHAPTER STARTS HERE', 'رحلتك القادمة تبدأ من هنا')}</span>
