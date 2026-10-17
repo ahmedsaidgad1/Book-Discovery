@@ -1,0 +1,31 @@
+# .NET build files
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# Node.js
+**/node_modules/
+**/dist/
+
+# Environment files and secrets
+.env
+.env.*
+!*.env.example
+**/secrets.json
+appsettings.Development.json
+
+# IDE and OS files
+.DS_Store
+Thumbs.db 
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+.vs/
+.env
+.env.*
+!*.env.example
+**/secrets.json
+appsettings.Development.json
