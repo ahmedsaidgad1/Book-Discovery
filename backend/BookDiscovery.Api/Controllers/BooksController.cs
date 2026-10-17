@@ -53,7 +53,7 @@ public class BooksController(AppDbContext db) : ControllerBase
         Ok(await db.Genres.OrderBy(g => g.Name).Select(g => new { g.Id, g.Name, g.NameAr }).ToListAsync());
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateBookRequest request)
     {
         if (!Uri.TryCreate(request.ReadingUrl, UriKind.Absolute, out var uri) ||
