@@ -27,6 +27,8 @@ public class Book
     [MaxLength(5)] public string Language { get; set; } = "en";
     public int? PublishedYear { get; set; }
     public int GenreId { get; set; }
+    [MaxLength(1000)] public string? ReadingUrl { get; set; }
+    [MaxLength(150)] public string? ReadingSource { get; set; }
     public Genre? Genre { get; set; }
     public List<Rating> Ratings { get; set; } = new();
     public List<ReadingListItem> ReadingListItems { get; set; } = new();
