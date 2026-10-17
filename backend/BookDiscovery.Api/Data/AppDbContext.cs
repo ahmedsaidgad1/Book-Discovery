@@ -15,11 +15,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.Entity<User>().HasIndex(x => x.Email).IsUnique();
-        model.Entity<Rating>().HasIndex(x => new { x.UserId, x.BookId }).IsUnique();
+
         model.Entity<UserGenre>().HasKey(x => new { x.UserId, x.GenreId });
-        model.Entity<UserGenre>().HasOne(x => x.User).WithMany(x => x.Interests).HasForeignKey(x => x.UserId);
-        model.Entity<UserGenre>().HasOne(x => x.Genre).WithMany().HasForeignKey(x => x.GenreId);
+        model.Entity<UserGenre>()
+            .HasOne(x => x.User)
+            .WithMany(x => x.Interests)
+            .HasForeignKey(x => x.UserId);
+        model.Entity<UserGenre>()
+            .HasOne(x => x.Genre)
+            .WithMany()
+            .HasForeignKey(x => x.GenreId);
+
+        model.Entity<Rating>().HasIndex(x => new { x.UserId, x.BookId }).IsUnique();
+        model.Entity<Rating>()
+            .HasOne(x => x.User)
+            .WithMany(x => x.Ratings)
+            .HasForeignKey(x => x.UserId);
+        model.Entity<Rating>()
+            .HasOne(x => x.Book)
+            .WithMany(x => x.Ratings)
+            .HasForeignKey(x => x.BookId);
+
         model.Entity<ReadingListItem>().HasIndex(x => new { x.UserId, x.BookId }).IsUnique();
-        model.Entity<Book>().HasOne(x => x.Genre).WithMany(x => x.Books).HasForeignKey(x => x.GenreId);
+        model.Entity<ReadingListItem>()
+            .HasOne(x => x.User)
+            .WithMany(x => x.ReadingListItems)
+            .HasForeignKey(x => x.UserId);
+        model.Entity<ReadingListItem>()
+            .HasOne(x => x.Book)
+            .WithMany(x => x.ReadingListItems)
+            .HasForeignKey(x => x.BookId);
+
+        model.Entity<Book>()
+            .HasOne(x => x.Genre)
+            .WithMany(x => x.Books)
+            .HasForeignKey(x => x.GenreId);
     }
 }
