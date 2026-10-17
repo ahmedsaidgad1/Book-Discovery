@@ -14,6 +14,8 @@ function App() {
   const [mode, setMode] = useState('login');
   const [message, setMessage] = useState('');
   const [recommendations, setRecommendations] = useState([]);
+  const [genres, setGenres] = useState([]);
+  const [newBook, setNewBook] = useState({ title: '', titleAr: '', author: '', description: '', genreId: '', readingUrl: '', readingSource: '' });
   const ar = lang === 'ar';
   const t = (en, arabic) => ar ? arabic : en;
 
@@ -31,7 +33,7 @@ function App() {
       if (res.ok) setRecommendations(await res.json());
     } catch { }
   }
-  useEffect(() => { loadBooks(); }, []);
+  useEffect(() => { loadBooks(); fetch(`${API}/api/genres`).then(r => r.ok ? r.json() : []).then(setGenres).catch(() => setGenres([])); }, []);
   useEffect(() => { if (token) loadRecommendations(); }, [token]);
   async function auth(e) {
     e.preventDefault(); setMessage('');
@@ -56,13 +58,32 @@ function App() {
     setMessage(res.ok ? t('Added to reading list', 'تمت الإضافة لقائمة القراءة') : t('Could not update list', 'تعذر تحديث القائمة'));
     loadRecommendations();
   }
+
+  async function createBook(e) {
+    e.preventDefault();
+    if (!token) { setMessage(t('Please sign in before adding a book.', 'سجّل الدخول قبل إضافة كتاب.')); return; }
+    try {
+      const res = await fetch(`${API}/api/books`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...newBook, genreId: Number(newBook.genreId), language: 'en' })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || t('Could not add book. Check the fields and try again.', 'تعذرت إضافة الكتاب. راجع البيانات وحاول مجددًا.'));
+      setMessage(t('Book added successfully.', 'تمت إضافة الكتاب بنجاح.'));
+      setNewBook({ title: '', titleAr: '', author: '', description: '', genreId: '', readingUrl: '', readingSource: '' });
+      await loadBooks(search);
+    } catch (err) { setMessage(err.message); }
+  }
+
   const bookCard = (b) => <article className="book" key={b.id}>
     <div className="cover"><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></div>
     <div className="book-body"><span className="genre">{ar ? (b.genre?.nameAr || 'كتاب') : (b.genre?.name || 'Book')}</span>
       <h3>{ar ? (b.titleAr || b.title) : b.title}</h3><p className="author">{b.author}</p>
       <p>{ar ? (b.descriptionAr || b.description) : b.description}</p>
       {b.averageRating !== undefined && <p className="rating">★ {Number(b.averageRating).toFixed(1)} <small>({b.ratingCount || 0})</small></p>}
-      <div className="actions"><button onClick={() => addToList(b.id)}>{t('Want to read', 'أريد قراءته')}</button><select aria-label="Rating" defaultValue="" onChange={e => { if (e.target.value) rate(b.id, Number(e.target.value)); }}><option value="" disabled>{t('Rate', 'قيّم')}</option>{[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} ★</option>)}</select></div>
+      {b.readingSource && <p className="reading-source">{t('Reading source:', 'مصدر القراءة:')} {b.readingSource}</p>}
+      <div className="actions">{b.readingUrl && /^https?:\/\//i.test(b.readingUrl) && <a className="read-link" href={b.readingUrl} target="_blank" rel="noopener noreferrer">{t('Read book', 'اقرأ الكتاب')}</a>}<button onClick={() => addToList(b.id)}>{t('Want to read', 'أريد قراءته')}</button><select aria-label="Rating" defaultValue="" onChange={e => { if (e.target.value) rate(b.id, Number(e.target.value)); }}><option value="" disabled>{t('Rate', 'قيّم')}</option>{[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} ★</option>)}</select></div>
     </div>
   </article>;
 
@@ -82,6 +103,17 @@ function App() {
       <section id="account" className="account-panel"><div><span className="eyebrow">{t('YOUR READING SPACE', 'مساحتك القرائية')}</span><h2>{t('Make it personal.', 'اجعلها تجربتك.')}</h2><p>{t('Sign in to rate books, save your reading list, and get recommendations.', 'سجّل الدخول لتقييم الكتب وحفظ قائمتك والحصول على ترشيحات.')}</p></div>
         {!token && <form onSubmit={auth} className="auth-form">{mode === 'register' && <input required placeholder={t('Name', 'الاسم')} value={name} onChange={e => setName(e.target.value)} />}<input required type="email" placeholder={t('Email', 'البريد الإلكتروني')} value={email} onChange={e => setEmail(e.target.value)} /><input required minLength="8" type="password" placeholder={t('Password (8+ chars)', 'كلمة المرور (8 أحرف على الأقل)')} value={password} onChange={e => setPassword(e.target.value)} /><button className="primary">{mode === 'login' ? t('Sign in', 'دخول') : t('Create account', 'إنشاء حساب')}</button><button type="button" className="text-button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>{mode === 'login' ? t('New here? Create account', 'مستخدم جديد؟ أنشئ حسابًا') : t('Already registered? Sign in', 'لديك حساب؟ سجّل الدخول')}</button></form>}
       </section>
+
+      {token && <section className="account-panel add-book-panel"><div><span className="eyebrow">{t('GROW THE LIBRARY', 'وسّع مكتبة الكتب')}</span><h2>{t('Add a book.', 'أضف كتابًا.')}</h2><p>{t('Add book details and a legitimate reading link. The book will be saved in the database.', 'أدخل بيانات الكتاب ورابط قراءة موثوقًا ليُحفظ في قاعدة البيانات.')}</p></div><form className="auth-form" onSubmit={createBook}>
+        <input required maxLength="200" placeholder={t('Book title *', 'عنوان الكتاب *')} value={newBook.title} onChange={e => setNewBook({...newBook, title:e.target.value})}/>
+        <input maxLength="200" placeholder={t('Arabic title (optional)', 'العنوان بالعربية (اختياري)')} value={newBook.titleAr} onChange={e => setNewBook({...newBook, titleAr:e.target.value})}/>
+        <input required maxLength="120" placeholder={t('Author *', 'المؤلف *')} value={newBook.author} onChange={e => setNewBook({...newBook, author:e.target.value})}/>
+        <textarea maxLength="2000" placeholder={t('Description (optional)', 'وصف الكتاب (اختياري)')} value={newBook.description} onChange={e => setNewBook({...newBook, description:e.target.value})}/>
+        <select required value={newBook.genreId} onChange={e => setNewBook({...newBook, genreId:e.target.value})}><option value="">{t('Choose genre *', 'اختر التصنيف *')}</option>{genres.map(g => <option key={g.id} value={g.id}>{ar ? (g.nameAr || g.name) : g.name}</option>)}</select>
+        <input required type="url" maxLength="1000" placeholder={t('Reading URL (https://...) *', 'رابط القراءة (https://...) *')} value={newBook.readingUrl} onChange={e => setNewBook({...newBook, readingUrl:e.target.value})}/>
+        <input maxLength="150" placeholder={t('Reading source (e.g. Project Gutenberg)', 'مصدر القراءة (مثلاً: Project Gutenberg)')} value={newBook.readingSource} onChange={e => setNewBook({...newBook, readingSource:e.target.value})}/>
+        <button className="primary">{t('Save book', 'حفظ الكتاب')}</button>
+      </form></section>}
       {token && <section id="recommendations" className="section"><div className="section-heading"><div><span className="eyebrow">{t('A LITTLE MORE PERSONAL', 'اختيارات أقرب لذوقك')}</span><h2>{t('Picked for you', 'ترشيحات لك')}</h2></div><span className="count">{recommendations.length} {t('books', 'كتب')}</span></div>{recommendations.length ? <div className="book-grid">{recommendations.map(bookCard)}</div> : <p>{t('Choose your interests and rate books to improve recommendations.', 'اختر اهتماماتك وقيّم الكتب لتحسين الترشيحات.')}</p>}</section>}
       <section id="discover" className="section"><div className="section-heading"><div><span className="eyebrow">{t('THE READING SHELF', 'رف الكتب')}</span><h2>{t('Explore your next read', 'اختر قراءتك القادمة')}</h2><p>{t('A few places to begin your next adventure.', 'بعض الاقتراحات لتبدأ رحلتك القادمة.')}</p></div><span className="count">{books.length} {t('books', 'كتب')}</span></div>
         <div className="book-grid">{books.map(bookCard)}</div>
