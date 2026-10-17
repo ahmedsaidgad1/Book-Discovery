@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BookDiscovery.Api.Controllers;
 
 [ApiController, Route("api/books")]
+[Authorize]
 public class BooksController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -49,6 +50,7 @@ public class BooksController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("/api/genres")]
+    [Authorize]
     public async Task<IActionResult> Genres() =>
         Ok(await db.Genres.OrderBy(g => g.Name).Select(g => new { g.Id, g.Name, g.NameAr }).ToListAsync());
 
