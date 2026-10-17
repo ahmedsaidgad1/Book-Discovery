@@ -27,6 +27,7 @@ function App() {
   })();
 
   async function loadBooks(term = '') {
+    if (!token) { setBooks([]); return; }
     try {
       const res = await fetch(`${API}/api/books?search=${encodeURIComponent(term)}`);
       if (!res.ok) throw new Error('API unavailable');
@@ -40,7 +41,7 @@ function App() {
       if (res.ok) setRecommendations(await res.json());
     } catch { }
   }
-  useEffect(() => { loadBooks(); fetch(`${API}/api/genres`).then(r => r.ok ? r.json() : []).then(setGenres).catch(() => setGenres([])); }, []);
+  useEffect(() => { if (token) { loadBooks(); fetch(`${API}/api/genres`).then(r => r.ok ? r.json() : []).then(setGenres).catch(() => setGenres([])); } else { setBooks([]); } }, [token]);
   useEffect(() => { if (token) loadRecommendations(); }, [token]);
   async function auth(e) {
     e.preventDefault(); setMessage('');
@@ -50,7 +51,7 @@ function App() {
       const res = await fetch(`${API}/api/auth/${route}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Authentication failed');
-      localStorage.setItem('token', data.token); setToken(data.token); setMessage(t('Signed in successfully', 'تم تسجيل الدخول بنجاح'));
+      localStorage.setItem('token', data.token); setToken(data.token); setMessage(t('Signed in successfully', 'تم تسجيل الدخول بنجاح')); await loadBooks(search);
     } catch (err) { setMessage(err.message); }
   }
   async function rate(bookId, score) {
@@ -84,9 +85,9 @@ function App() {
   }
 
   const bookCard = (b) => <article className="book" key={b.id}>
-    {b.readingUrl && (b.readingUrl.startsWith('http://') || b.readingUrl.startsWith('https://')) ? <a className="cover" href={b.readingUrl} target="_blank" rel="noopener noreferrer" aria-label={t('Open book to read', 'افتح الكتاب للقراءة')}><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></a> : <div className="cover"><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></div>}
+    <a className="cover" href={`#read/${b.id}`} aria-label={t('Open book details and reader', 'افتح صفحة الكتاب والقراءة')}><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></a>
     <div className="book-body"><span className="genre">{ar ? (b.genre?.nameAr || 'كتاب') : (b.genre?.name || 'Book')}</span>
-      <h3>{b.readingUrl && (b.readingUrl.startsWith('http://') || b.readingUrl.startsWith('https://')) ? <a href={b.readingUrl} target="_blank" rel="noopener noreferrer">{ar ? (b.titleAr || b.title) : b.title}</a> : (ar ? (b.titleAr || b.title) : b.title)}</h3><p className="author">{b.author}</p>
+      <h3><a href={`#read/${b.id}`}>{ar ? (b.titleAr || b.title) : b.title}</a></h3><p className="author">{b.author}</p>
       <p>{ar ? (b.descriptionAr || b.description) : b.description}</p>
       {b.averageRating !== undefined && <p className="rating">★ {Number(b.averageRating).toFixed(1)} <small>({b.ratingCount || 0})</small></p>}
       {b.readingSource && <p className="reading-source">{t('Reading source:', 'مصدر القراءة:')} {b.readingSource}</p>}
@@ -107,9 +108,11 @@ function App() {
         <div className="hero-meta"><span>✦ {t('Discover your taste', 'اكتشف ذوقك')}</span><span>✦ {t('Build your reading list', 'نظّم قراءاتك')}</span></div>
       </div><div className="hero-art"><div className="sun"></div><div className="floating-book book-one"><small>01 / FICTION</small><b>Stories<br />that stay.</b><span>BOOK DISCOVERY</span></div><div className="floating-book book-two"><small>READ • GROW</small><b>One page<br />at a time.</b></div><div className="spark">✳</div></div></section>
       {message && <div className="notice">{message}<button onClick={() => setMessage('')}>×</button></div>}
-      <section id="account" className="account-panel"><div><span className="eyebrow">{t('YOUR READING SPACE', 'مساحتك القرائية')}</span><h2>{t('Make it personal.', 'اجعلها تجربتك.')}</h2><p>{t('Sign in to rate books, save your reading list, and get recommendations.', 'سجّل الدخول لتقييم الكتب وحفظ قائمتك والحصول على ترشيحات.')}</p></div>
+      {!token && <section className="account-panel"><div><span className="eyebrow">{t('MEMBERS ONLY', 'للأعضاء فقط')}</span><h2>{t('Sign in to explore books.', 'سجّل الدخول لاستكشاف الكتب.')}</h2><p>{t('Create an account or sign in to browse the library and open books.', 'أنشئ حسابًا أو سجّل الدخول لتصفح المكتبة وفتح الكتب.')}</p></div></section>}
+      {token && window.location.hash.startsWith('#read/') && (() => { const selected = books.find(b => String(b.id) === window.location.hash.slice(6)); return <section className="account-panel"><div><button className="text-button" onClick={() => { window.location.hash = '#discover'; }}>← {t('Back to books', 'العودة للكتب')}</button><span className="eyebrow">{t('YOUR READING ROOM', 'غرفة القراءة')}</span><h2>{selected ? (ar ? (selected.titleAr || selected.title) : selected.title) : t('Book not found', 'الكتاب غير موجود')}</h2>{selected && <><p>{selected.author}</p><p>{ar ? (selected.descriptionAr || selected.description) : selected.description}</p>{selected.readingSource && <p>{t('Reading source:', 'مصدر القراءة:')} {selected.readingSource}</p>}{selected.readingUrl && <><iframe title={selected.title} src={selected.readingUrl} style={{ width: '100%', height: '70vh', border: '1px solid #ddd', borderRadius: '12px' }} referrerPolicy="no-referrer" /><p><a className="read-link" href={selected.readingUrl} target="_blank" rel="noopener noreferrer">{t('If the reader does not load, open the book here', 'لو القارئ لم يعمل، افتح الكتاب من هنا')}</a></p></>}</>}</div></section>; })()}
+      {token && !window.location.hash.startsWith('#read/') && <section id="account" className="account-panel"><div><span className="eyebrow">{t('YOUR READING SPACE', 'مساحتك القرائية')}</span><h2>{t('Make it personal.', 'اجعلها تجربتك.')}</h2><p>{t('Sign in to rate books, save your reading list, and get recommendations.', 'سجّل الدخول لتقييم الكتب وحفظ قائمتك والحصول على ترشيحات.')}</p></div>
         {!token && <form onSubmit={auth} className="auth-form">{mode === 'register' && <input required placeholder={t('Name', 'الاسم')} value={name} onChange={e => setName(e.target.value)} />}<input required type="email" placeholder={t('Email', 'البريد الإلكتروني')} value={email} onChange={e => setEmail(e.target.value)} /><input required minLength="8" type="password" placeholder={t('Password (8+ chars)', 'كلمة المرور (8 أحرف على الأقل)')} value={password} onChange={e => setPassword(e.target.value)} /><button className="primary">{mode === 'login' ? t('Sign in', 'دخول') : t('Create account', 'إنشاء حساب')}</button><button type="button" className="text-button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>{mode === 'login' ? t('New here? Create account', 'مستخدم جديد؟ أنشئ حسابًا') : t('Already registered? Sign in', 'لديك حساب؟ سجّل الدخول')}</button></form>}
-      </section>
+      </section>}
 
       {token && isAdmin && <section className="account-panel add-book-panel"><div><span className="eyebrow">{t('GROW THE LIBRARY', 'وسّع مكتبة الكتب')}</span><h2>{t('Add a book.', 'أضف كتابًا.')}</h2><p>{t('Add book details and a legitimate reading link. The book will be saved in the database.', 'أدخل بيانات الكتاب ورابط قراءة موثوقًا ليُحفظ في قاعدة البيانات.')}</p></div><form className="auth-form" onSubmit={createBook}>
         <input required maxLength="200" placeholder={t('Book title *', 'عنوان الكتاب *')} value={newBook.title} onChange={e => setNewBook({...newBook, title:e.target.value})}/>
