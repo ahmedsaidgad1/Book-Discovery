@@ -84,9 +84,9 @@ function App() {
   }
 
   const bookCard = (b) => <article className="book" key={b.id}>
-    {b.readingUrl && /^https?:\\/\\//i.test(b.readingUrl) ? <a className="cover" href={b.readingUrl} target="_blank" rel="noopener noreferrer" aria-label={t('Open book to read', 'افتح الكتاب للقراءة')}><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></a> : <div className="cover"><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></div>}
+    {b.readingUrl && (b.readingUrl.startsWith('http://') || b.readingUrl.startsWith('https://')) ? <a className="cover" href={b.readingUrl} target="_blank" rel="noopener noreferrer" aria-label={t('Open book to read', 'افتح الكتاب للقراءة')}><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></a> : <div className="cover"><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></div>}
     <div className="book-body"><span className="genre">{ar ? (b.genre?.nameAr || 'كتاب') : (b.genre?.name || 'Book')}</span>
-      <h3>{b.readingUrl && /^https?:\\/\\//i.test(b.readingUrl) ? <a href={b.readingUrl} target="_blank" rel="noopener noreferrer">{ar ? (b.titleAr || b.title) : b.title}</a> : (ar ? (b.titleAr || b.title) : b.title)}</h3><p className="author">{b.author}</p>
+      <h3>{b.readingUrl && (b.readingUrl.startsWith('http://') || b.readingUrl.startsWith('https://')) ? <a href={b.readingUrl} target="_blank" rel="noopener noreferrer">{ar ? (b.titleAr || b.title) : b.title}</a> : (ar ? (b.titleAr || b.title) : b.title)}</h3><p className="author">{b.author}</p>
       <p>{ar ? (b.descriptionAr || b.description) : b.description}</p>
       {b.averageRating !== undefined && <p className="rating">★ {Number(b.averageRating).toFixed(1)} <small>({b.ratingCount || 0})</small></p>}
       {b.readingSource && <p className="reading-source">{t('Reading source:', 'مصدر القراءة:')} {b.readingSource}</p>}
