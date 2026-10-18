@@ -74,6 +74,7 @@ using (var scope = app.Services.CreateScope())
         WHEN N'A Brief History of Time' THEN N'https://books.google.com/books?q=A+Brief+History+of+Time+Stephen+Hawking'
         WHEN N'Murder on the Orient Express' THEN N'https://books.google.com/books?q=Murder+on+the+Orient+Express+Agatha+Christie'
         WHEN N'Atomic Habits' THEN N'https://books.google.com/books?q=Atomic+Habits+James+Clear'
+        WHEN N'Harry Potter' THEN N'https://books.google.com/books?q=Harry+Potter+J+K+Rowling'
         WHEN N'The Silk Roads' THEN N'https://books.google.com/books?q=The+Silk+Roads+Peter+Frankopan'
         ELSE ReadingUrl END,
         ReadingSource = CASE WHEN ReadingSource IS NULL OR LTRIM(RTRIM(ReadingSource)) = '' THEN N'Google Books (preview/search)' ELSE ReadingSource END
