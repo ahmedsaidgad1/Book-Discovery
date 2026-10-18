@@ -8,6 +8,8 @@ function App() {
   const [theme, setTheme] = useState(localStorage.getItem('book-discovery-theme') || 'light');
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#');
   const [books, setBooks] = useState([]);
+  const [openedBook, setOpenedBook] = useState(null);
+  const [readerFailed, setReaderFailed] = useState(false);
   const [search, setSearch] = useState('');
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [email, setEmail] = useState('');
