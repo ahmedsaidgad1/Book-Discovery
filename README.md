@@ -55,7 +55,8 @@ Reading links are supplied by the catalogue and may lead to a preview or publish
 The app currently uses `EnsureCreated()` for initial setup and creates the BookReviews table for existing local databases. This is a development convenience, not a substitute for a versioned EF Core migration workflow. Back up the database before schema changes. For a production deployment, add and apply migrations instead of relying on startup SQL.
 
 ## Security and deployment
-- Never deploy with the development JWT key. Configure a long, random secret through the `Jwt__Key` environment variable and set `ASPNETCORE_ENVIRONMENT=Production`; startup will reject the placeholder key in Production.
+- Configure `Jwt__Key` as a unique random secret of at least 32 UTF-8 bytes in your environment or secret manager before starting the API. The committed settings intentionally contain no JWT secret, and the API refuses to start without a valid key in every environment.
+- Configure `Admin__Email` through environment variables or a secret manager to grant the Admin role; no administrator email is committed to source control.
 - Configure `ConnectionStrings__DefaultConnection` through environment variables or a secret manager for deployment.
 - Use HTTPS, least-privilege SQL credentials, and a specific frontend origin for CORS.
 - Before public release, add rate limiting, account recovery/email verification, moderation/reporting, privacy controls, structured logging, and automated tests.
