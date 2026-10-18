@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserGenre> UserGenres => Set<UserGenre>();
     public DbSet<Rating> Ratings => Set<Rating>();
     public DbSet<ReadingListItem> ReadingListItems => Set<ReadingListItem>();
+    public DbSet<BookReview> BookReviews => Set<BookReview>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -35,6 +36,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(x => x.Book)
             .WithMany(x => x.Ratings)
             .HasForeignKey(x => x.BookId);
+
+        model.Entity<BookReview>().HasIndex(x => new { x.UserId, x.BookId }).IsUnique();
+        model.Entity<BookReview>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
+        model.Entity<BookReview>().HasOne(x => x.Book).WithMany().HasForeignKey(x => x.BookId);
 
         model.Entity<ReadingListItem>().HasIndex(x => new { x.UserId, x.BookId }).IsUnique();
         model.Entity<ReadingListItem>()
