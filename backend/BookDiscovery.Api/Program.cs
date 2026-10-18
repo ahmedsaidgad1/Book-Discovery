@@ -53,6 +53,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    db.Database.ExecuteSqlRaw("IF COL_LENGTH('dbo.Books', 'ReadingUrl') IS NULL ALTER TABLE dbo.Books ADD ReadingUrl nvarchar(1000) NULL; IF COL_LENGTH('dbo.Books', 'ReadingSource') IS NULL ALTER TABLE dbo.Books ADD ReadingSource nvarchar(150) NULL;");
     db.Database.ExecuteSqlRaw(@"IF OBJECT_ID('dbo.BookReviews', 'U') IS NULL
         CREATE TABLE dbo.BookReviews (
             Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_BookReviews PRIMARY KEY,
@@ -69,7 +70,6 @@ using (var scope = app.Services.CreateScope())
     db.Database.ExecuteSqlRaw(@"UPDATE dbo.Books SET ReadingUrl = N'https://books.google.com/books?q=Atomic+Habits+James+Clear',
         ReadingSource = N'Google Books (preview/search)'
         WHERE Title = N'Atomic Habits' AND ReadingUrl LIKE N'%archive.org%';");
-    db.Database.ExecuteSqlRaw("IF COL_LENGTH('dbo.Books', 'ReadingUrl') IS NULL ALTER TABLE dbo.Books ADD ReadingUrl nvarchar(1000) NULL; IF COL_LENGTH('dbo.Books', 'ReadingSource') IS NULL ALTER TABLE dbo.Books ADD ReadingSource nvarchar(150) NULL;");
     db.Database.ExecuteSqlRaw(@"UPDATE dbo.Books SET ReadingUrl = CASE Title
         WHEN N'The Hobbit' THEN N'https://books.google.com/books?q=The+Hobbit+J.+R.+R.+Tolkien'
         WHEN N'A Brief History of Time' THEN N'https://books.google.com/books?q=A+Brief+History+of+Time+Stephen+Hawking'
