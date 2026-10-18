@@ -126,8 +126,8 @@ public class ReaderController(AppDbContext db) : ControllerBase
         var books = await query.Where(b => !excluded.Contains(b.Id))
             .OrderByDescending(b => b.Ratings.Count == 0 ? 0 : b.Ratings.Average(r => r.Score))
             .ThenBy(b => b.Title).Take(10)
-            .Select(b => new { b.Id, b.Title, b.TitleAr, b.Author, b.Description, b.DescriptionAr,
-                Genre = b.Genre == null ? null : new { b.Genre.Name, b.Genre.NameAr },
+            .Select(b => new { b.Id, b.Title, b.TitleAr, b.Author, b.Description, b.DescriptionAr, b.ReadingUrl, b.ReadingSource,
+                Genre = b.Genre == null ? null : new { b.Genre.Id, b.Genre.Name, b.Genre.NameAr },
                 Reason = interests.Contains(b.GenreId) ? "Matches your interests" : "Popular discovery",
                 AverageRating = b.Ratings.Any() ? b.Ratings.Average(r => r.Score) : 0 })
             .ToListAsync();
