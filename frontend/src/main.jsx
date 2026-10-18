@@ -66,10 +66,8 @@ function App() {
     if (!token) return;
     try { const res = await fetch(`${API}/api/reader/reading-list`, { headers: { Authorization: `Bearer ${token}` } }); if (res.ok) setReadingList(await res.json()); } catch { setMessage(t('Could not load your reading list.', 'تعذر تحميل قائمة القراءة.')); }
   }
-  async function fetchInterests() {
-    if (!token) return;
-    try { const res = await fetch(`${API}/api/reader/interests`, { headers: { Authorization: `Bearer ${token}` } }); if (res.ok) setSelectedInterests(await res.json()); } catch { }
-  }
+  // Interests are intentionally session-only: they reset on page refresh.
+  async function fetchInterests() { setSelectedInterests([]); }
   async function loadBookReviews(bookId) {
     if (!token || !bookId) return;
     try { const res = await fetch(`${API}/api/reader/books/${bookId}/reviews`, { headers: { Authorization: `Bearer ${token}` } }); setBookReviews(res.ok ? await res.json() : []); } catch { setBookReviews([]); }
@@ -83,12 +81,11 @@ function App() {
   }
   async function saveInterests() {
     try {
-      const res = await fetch(`${API}/api/reader/interests`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ genreIds: selectedInterests.map(Number) }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || t('Could not save interests.', 'تعذر حفظ الاهتمامات.'));
-      if (Array.isArray(data.genreIds)) setSelectedInterests(data.genreIds);
-      await loadRecommendations();
-      setMessage(t('Interests saved. Picked for you has been updated.', 'تم حفظ اهتماماتك وتحديث الترشيحات لك.'));
+      const res = await fetch(`${API}/api/books?page=1&pageSize=100`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(t('Could not refresh books. Check that the backend is running.', 'تعذر تحديث الكتب. تأكد أن الخادم يعمل.'));
+      const data = await res.json();
+      setRecommendations(data.items || []);
+      setMessage(t('Picked for you updated for this session. Refreshing the page will clear these choices.', 'تم تحديث ترشيحاتك لهذه الجلسة. تحديث الصفحة سيمسح اختياراتك.'));
     } catch (err) { setMessage(err.message); }
   }
   async function loadRecommendations() {
