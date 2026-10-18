@@ -109,9 +109,9 @@ function App() {
   const chooseBookToRead = (book) => { setSelectedBookPreview(book); setShowBookReview(false); window.setTimeout(() => document.getElementById('selected-book-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0); };
 
   const bookCard = (b) => <article className="book" key={b.id}>
-    <a className="cover" href={`#read/${b.id}`} aria-label={t('Open book details and reader', 'افتح صفحة الكتاب والقراءة')}><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></a>
+    <div className="cover" aria-label={t('Book cover', 'غلاف الكتاب')}><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></div>
     <div className="book-body"><span className="genre">{ar ? (b.genre?.nameAr || 'كتاب') : (b.genre?.name || 'Book')}</span>
-      <h3><a href={`#read/${b.id}`}>{ar ? (b.titleAr || b.title) : b.title}</a></h3><p className="author">{b.author}</p>
+      <h3>{ar ? (b.titleAr || b.title) : b.title}</h3><p className="author">{b.author}</p>
       <p>{ar ? (b.descriptionAr || b.description) : b.description}</p>
       {b.averageRating !== undefined && <p className="rating">★ {Number(b.averageRating).toFixed(1)} <small>({b.ratingCount || 0})</small></p>}
       {b.readingSource && <p className="reading-source">{t('Reading source:', 'مصدر القراءة:')} {b.readingSource}</p>}
