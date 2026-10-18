@@ -81,10 +81,19 @@ function App() {
   }
   async function saveInterests() {
     try {
-      const res = await fetch(`${API}/api/books?page=1&pageSize=100`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error(t('Could not refresh books. Check that the backend is running.', 'تعذر تحديث الكتب. تأكد أن الخادم يعمل.'));
-      const data = await res.json();
-      setRecommendations(data.items || []);
+      const headers = { Authorization: `Bearer ${token}` };
+      const firstRes = await fetch(`${API}/api/books?page=1&pageSize=50`, { headers });
+      if (!firstRes.ok) throw new Error(t('Could not refresh books. Check that the backend is running.', 'تعذر تحديث الكتب. تأكد أن الخادم يعمل.'));
+      const firstPage = await firstRes.json();
+      const allBooks = [...(firstPage.items || [])];
+      const pageCount = Math.ceil((firstPage.total || allBooks.length) / Math.max(1, firstPage.pageSize || 50));
+      for (let page = 2; page <= pageCount; page += 1) {
+        const res = await fetch(`${API}/api/books?page=${page}&pageSize=50`, { headers });
+        if (!res.ok) throw new Error(t('Could not load all books for recommendations.', 'تعذر تحميل كل الكتب للترشيحات.'));
+        const data = await res.json();
+        allBooks.push(...(data.items || []));
+      }
+      setRecommendations(allBooks);
       setMessage(t('Picked for you updated for this session. Refreshing the page will clear these choices.', 'تم تحديث ترشيحاتك لهذه الجلسة. تحديث الصفحة سيمسح اختياراتك.'));
     } catch (err) { setMessage(err.message); }
   }
