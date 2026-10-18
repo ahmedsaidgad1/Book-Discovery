@@ -53,6 +53,16 @@ function App() {
   useEffect(() => { const onHashChange = () => setCurrentHash(window.location.hash || '#'); window.addEventListener('hashchange', onHashChange); return () => window.removeEventListener('hashchange', onHashChange); }, []);
   useEffect(() => { if (token) { loadBooks(); fetch(`${API}/api/genres`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : []).then(setGenres).catch(() => setGenres([])); } else { setBooks([]); } }, [token]);
   useEffect(() => { if (token) loadRecommendations(); }, [token]);
+  useEffect(() => {
+    setReaderFailed(false);
+    if (!token || !currentHash.startsWith('#read/')) { setOpenedBook(null); return; }
+    const id = currentHash.slice(6);
+    const existing = books.find(b => String(b.id) === id);
+    if (existing) { setOpenedBook(existing); return; }
+    if (!/^\\d+$/.test(id)) { setOpenedBook(null); return; }
+    fetch(`${API}/api/books/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.ok ? res.json() : null).then(setOpenedBook).catch(() => setOpenedBook(null));
+  }, [token, currentHash, books]);
   async function auth(e) {
     e.preventDefault(); setMessage('');
     const route = mode === 'login' ? 'login' : 'register';
@@ -101,7 +111,7 @@ function App() {
       <p>{ar ? (b.descriptionAr || b.description) : b.description}</p>
       {b.averageRating !== undefined && <p className="rating">★ {Number(b.averageRating).toFixed(1)} <small>({b.ratingCount || 0})</small></p>}
       {b.readingSource && <p className="reading-source">{t('Reading source:', 'مصدر القراءة:')} {b.readingSource}</p>}
-      <div className="actions">{b.readingUrl && /^https?:\/\//i.test(b.readingUrl) && <a className="read-link" href={b.readingUrl} target="_blank" rel="noopener noreferrer">{t('Read book', 'اقرأ الكتاب')}</a>}<button onClick={() => addToList(b.id)}>{t('Want to read', 'أريد قراءته')}</button><select aria-label="Rating" defaultValue="" onChange={e => { if (e.target.value) rate(b.id, Number(e.target.value)); }}><option value="" disabled>{t('Rate', 'قيّم')}</option>{[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} ★</option>)}</select></div>
+      <div className="actions">{b.readingUrl && /^https?:\/\//i.test(b.readingUrl) && <a className="read-link" href={`#read/${b.id}`}>{t('Reading options', 'خيارات القراءة')}</a>}<button onClick={() => addToList(b.id)}>{t('Want to read', 'أريد قراءته')}</button><select aria-label="Rating" defaultValue="" onChange={e => { if (e.target.value) rate(b.id, Number(e.target.value)); }}><option value="" disabled>{t('Rate', 'قيّم')}</option>{[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} ★</option>)}</select></div>
     </div>
   </article>;
 
