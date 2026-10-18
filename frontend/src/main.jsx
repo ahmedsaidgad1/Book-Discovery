@@ -21,6 +21,10 @@ function App() {
   const [message, setMessage] = useState('');
   const [recommendations, setRecommendations] = useState([]);
   const [genres, setGenres] = useState([]);
+  const [readingList, setReadingList] = useState([]);
+  const [selectedInterests, setSelectedInterests] = useState([]);
+  const [bookReviews, setBookReviews] = useState([]);
+  const [reviewDraft, setReviewDraft] = useState('');
   const [newBook, setNewBook] = useState({ title: '', titleAr: '', author: '', description: '', genreId: '', readingUrl: '', readingSource: '' });
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -45,6 +49,28 @@ function App() {
       const data = await res.json(); setBooks(data.items || []);
     } catch { setMessage(t('Could not connect to API. Start the .NET backend first.', 'تعذر الاتصال بالخادم. شغّل Backend أولاً.')); }
   }
+  async function loadReadingList() {
+    if (!token) return;
+    try { const res = await fetch(`${API}/api/reader/reading-list`, { headers: { Authorization: `Bearer ${token}` } }); if (res.ok) setReadingList(await res.json()); } catch { setMessage(t('Could not load your reading list.', 'تعذر تحميل قائمة القراءة.')); }
+  }
+  async function fetchInterests() {
+    if (!token) return;
+    try { const res = await fetch(`${API}/api/reader/interests`, { headers: { Authorization: `Bearer ${token}` } }); if (res.ok) setSelectedInterests(await res.json()); } catch { }
+  }
+  async function loadBookReviews(bookId) {
+    if (!token || !bookId) return;
+    try { const res = await fetch(`${API}/api/reader/books/${bookId}/reviews`, { headers: { Authorization: `Bearer ${token}` } }); setBookReviews(res.ok ? await res.json() : []); } catch { setBookReviews([]); }
+  }
+  async function saveBookReview(e) {
+    e.preventDefault(); if (!selectedBookPreview || !reviewDraft.trim()) return;
+    try { const res = await fetch(`${API}/api/reader/books/${selectedBookPreview.id}/review`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ content: reviewDraft.trim() }) }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.message || t('Could not save review.', 'تعذر حفظ المراجعة.')); setReviewDraft(''); setMessage(t('Review saved.', 'تم حفظ المراجعة.')); await loadBookReviews(selectedBookPreview.id); } catch (err) { setMessage(err.message); }
+  }
+  async function removeFromReadingList(bookId) {
+    try { const res = await fetch(`${API}/api/reader/books/${bookId}/reading-status`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); if (!res.ok && res.status !== 204) throw new Error(t('Could not remove book.', 'تعذر حذف الكتاب.')); setReadingList(items => items.filter(item => item.id !== bookId)); loadRecommendations(); } catch (err) { setMessage(err.message); }
+  }
+  async function saveInterests() {
+    try { const res = await fetch(`${API}/api/reader/interests`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ genreIds: selectedInterests }) }); if (!res.ok) throw new Error(t('Could not save interests.', 'تعذر حفظ الاهتمامات.')); setMessage(t('Interests saved.', 'تم حفظ الاهتمامات.')); loadRecommendations(); } catch (err) { setMessage(err.message); }
+  }
   async function loadRecommendations() {
     if (!token) return;
     try {
@@ -54,7 +80,7 @@ function App() {
   }
   useEffect(() => { const onHashChange = () => setCurrentHash(window.location.hash || '#'); window.addEventListener('hashchange', onHashChange); return () => window.removeEventListener('hashchange', onHashChange); }, []);
   useEffect(() => { if (token) { loadBooks(); fetch(`${API}/api/genres`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : []).then(setGenres).catch(() => setGenres([])); } else { setBooks([]); } }, [token]);
-  useEffect(() => { if (token) loadRecommendations(); }, [token]);
+  useEffect(() => { if (token) { loadRecommendations(); loadReadingList(); fetchInterests(); } else { setReadingList([]); setSelectedInterests([]); } }, [token]);
   useEffect(() => {
     setReaderFailed(false);
     if (!token || !currentHash.startsWith('#read/')) { setOpenedBook(null); return; }
@@ -106,7 +132,7 @@ function App() {
     } catch (err) { setMessage(err.message); }
   }
 
-  const chooseBookToRead = (book) => { setSelectedBookPreview(book); setShowBookReview(false); window.setTimeout(() => document.getElementById('selected-book-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0); };
+  const chooseBookToRead = (book) => { setSelectedBookPreview(book); setShowBookReview(false); setReviewDraft(''); loadBookReviews(book.id); window.setTimeout(() => document.getElementById('selected-book-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0); };
 
   const bookCard = (b) => <article className="book" key={b.id}>
     <div className="cover" aria-label={t('Book cover', 'غلاف الكتاب')}><span>BOOK</span><strong>{ar ? (b.titleAr || b.title) : b.title}</strong><small>{b.author}</small></div>
