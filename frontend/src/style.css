@@ -96,3 +96,6 @@
 :root[data-theme="dark"] .reading-list-actions select,:root[data-theme="dark"] .review-form textarea{background:#141b16;border-color:#465448;color:#e9ede5}
 :root[data-theme="dark"] .reader-review{border-color:#3b493d}
 @media(max-width:680px){.reading-list-item{align-items:flex-start;flex-direction:column}.reading-list-actions{width:100%}.reading-list-actions select{max-width:none}}
+
+.reading-list-filter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 14px;font-size:12px;color:var(--muted,#8f9b8d)}
+.reading-list-filter select{padding:8px 10px;border:1px solid #465448;border-radius:6px;background:var(--surface,#172019);color:inherit;font:inherit;min-width:145px}
