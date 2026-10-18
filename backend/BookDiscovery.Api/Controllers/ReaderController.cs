@@ -47,7 +47,7 @@ public class ReaderController(AppDbContext db) : ControllerBase
     {
         var items = await db.ReadingListItems.Where(x => x.UserId == UserId)
             .Join(db.Books.Include(b => b.Genre), i => i.BookId, b => b.Id,
-                (i, b) => new { b.Id, b.Title, b.TitleAr, b.Author, i.Status, i.AddedAt })
+                (i, b) => new { b.Id, b.Title, b.TitleAr, b.Author, GenreId = b.GenreId, GenreName = b.Genre == null ? null : b.Genre.Name, GenreNameAr = b.Genre == null ? null : b.Genre.NameAr, i.Status, i.AddedAt })
             .OrderByDescending(x => x.AddedAt).ToListAsync();
         return Ok(items);
     }
