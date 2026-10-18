@@ -7,6 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuredJwtKey = builder.Configuration["Jwt:Key"];
+if (builder.Environment.IsProduction() &&
+    (string.IsNullOrWhiteSpace(configuredJwtKey) || configuredJwtKey.StartsWith("CHANGE_THIS", StringComparison.Ordinal)))
+{
+    throw new InvalidOperationException("Set a unique secret using the Jwt__Key environment variable before running in Production.");
+}
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
