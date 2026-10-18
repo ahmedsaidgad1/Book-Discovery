@@ -33,20 +33,6 @@ function App() {
 
   const ar = lang === 'ar';
   const t = (en, arabic) => ar ? arabic : en;
-  const activeGenreIds = selectedInterests;
-  const filterBySelectedGenres = (items) => activeGenreIds.length === 0 ? items : items.filter(book => {
-    const genreId = book.genreId ?? book.genre?.id ?? book.GenreId ?? book.genre?.Id;
-    const genreName = String(book.genre?.name ?? book.genre?.nameAr ?? book.genreName ?? book.genre ?? '').trim().toLowerCase();
-    const genreNameAr = String(book.genre?.nameAr ?? book.genreNameAr ?? '').trim().toLowerCase();
-    return activeGenreIds.some(id => {
-      const selectedGenre = genres.find(g => Number(g.id) === Number(id));
-      return Number(genreId) === Number(id) ||
-        (selectedGenre && (genreName === String(selectedGenre.name || '').trim().toLowerCase() ||
-          genreNameAr === String(selectedGenre.nameAr || '').trim().toLowerCase()));
-    });
-  });
-  const filteredBooks = filterBySelectedGenres(books);
-  const filteredRecommendations = filterBySelectedGenres(recommendations);
   const isAdmin = (() => {
     try {
       if (!token) return false;
@@ -241,9 +227,9 @@ function App() {
         <input maxLength="150" placeholder={t('Reading source (e.g. Project Gutenberg)', 'مصدر القراءة (مثلاً: Project Gutenberg)')} value={newBook.readingSource} onChange={e => setNewBook({...newBook, readingSource:e.target.value})}/>
         <button className="primary">{t('Save book', 'حفظ الكتاب')}</button>
       </form></section>}
-      {token && <section id="recommendations" className="section"><div className="section-heading"><div><span className="eyebrow">{t('A LITTLE MORE PERSONAL', 'اختيارات أقرب لذوقك')}</span><h2>{t('Picked for you', 'ترشيحات لك')}</h2></div><span className="count">{filteredRecommendations.length} {t('books', 'كتب')}</span></div>{filteredRecommendations.length ? <div className="book-grid">{filteredRecommendations.map(bookCard)}</div> : <p>{activeGenreIds.length ? t('No recommended books match the selected genres.', 'لا توجد كتب مرشحة تطابق التصنيفات المختارة.') : t('Choose your interests and rate books to improve recommendations.', 'اختر اهتماماتك وقيّم الكتب لتحسين الترشيحات.')}</p>}</section>}
-      <section id="discover" className="section"><div className="section-heading"><div><span className="eyebrow">{t('THE READING SHELF', 'رف الكتب')}</span><h2>{t('Explore your next read', 'اختر قراءتك القادمة')}</h2><p>{t('A few places to begin your next adventure.', 'بعض الاقتراحات لتبدأ رحلتك القادمة.')}</p></div><span className="count">{filteredBooks.length} {t('books', 'كتب')}</span></div>
-        <div className="book-grid">{filteredBooks.map(bookCard)}</div>{filteredBooks.length === 0 && <p>{t('No books match the selected genres.', 'لا توجد كتب تطابق التصنيفات المختارة.')}</p>}
+      {token && <section id="recommendations" className="section"><div className="section-heading"><div><span className="eyebrow">{t('A LITTLE MORE PERSONAL', 'اختيارات أقرب لذوقك')}</span><h2>{t('Picked for you', 'ترشيحات لك')}</h2></div><span className="count">{recommendations.length} {t('books', 'كتب')}</span></div>{recommendations.length ? <div className="book-grid">{recommendations.map(bookCard)}</div> : <p>{t('Choose your interests and rate books to improve recommendations.', 'اختر اهتماماتك وقيّم الكتب لتحسين الترشيحات.')}</p>}</section>}
+      <section id="discover" className="section"><div className="section-heading"><div><span className="eyebrow">{t('THE READING SHELF', 'رف الكتب')}</span><h2>{t('Explore your next read', 'اختر قراءتك القادمة')}</h2><p>{t('A few places to begin your next adventure.', 'بعض الاقتراحات لتبدأ رحلتك القادمة.')}</p></div><span className="count">{books.length} {t('books', 'كتب')}</span></div>
+        <div className="book-grid">{books.map(bookCard)}</div>
       </section>
       <section className="community"><div><span className="eyebrow">{t('READING IS BETTER TOGETHER', 'القراءة أجمل مع الآخرين')}</span><h2>{t('Every reader has a story.', 'لكل قارئ حكاية.')}</h2><p>{t('Reader profiles, shared interests, and following are planned for the next release.', 'ملفات القراء والاهتمامات المشتركة والمتابعة ضمن التطوير القادم.')}</p></div><div className="community-mark">Read<br /><i>together.</i></div></section>
     </main>
