@@ -8,10 +8,11 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuredJwtKey = builder.Configuration["Jwt:Key"];
-if (builder.Environment.IsProduction() &&
-    (string.IsNullOrWhiteSpace(configuredJwtKey) || configuredJwtKey.StartsWith("CHANGE_THIS", StringComparison.Ordinal)))
+if (string.IsNullOrWhiteSpace(configuredJwtKey) ||
+    configuredJwtKey.StartsWith("CHANGE_THIS", StringComparison.Ordinal) ||
+    Encoding.UTF8.GetByteCount(configuredJwtKey) < 32)
 {
-    throw new InvalidOperationException("Set a unique secret using the Jwt__Key environment variable before running in Production.");
+    throw new InvalidOperationException("Configure Jwt__Key with a unique secret of at least 32 UTF-8 bytes before starting the API.");
 }
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -21,7 +22,7 @@ builder.Services.AddDbContext<AppDbContext>(o =>
 builder.Services.AddScoped<TokenService>();
 
 var jwt = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
+var key = Encoding.UTF8.GetBytes(configuredJwtKey!);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
 {
     o.TokenValidationParameters = new TokenValidationParameters
