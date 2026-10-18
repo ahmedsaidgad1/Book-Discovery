@@ -36,8 +36,15 @@ function App() {
   const t = (en, arabic) => ar ? arabic : en;
   const filteredReadingList = readingListGenreFilter === 'all' ? readingList : readingList.filter(item => String(item.genreId) === String(readingListGenreFilter));
   const filteredRecommendations = selectedInterests.length === 0 ? recommendations : recommendations.filter(book => {
-    const bookGenreId = book.genreId ?? book.GenreId ?? book.genre?.id ?? book.genre?.Id;
-    return selectedInterests.some(id => String(id) === String(bookGenreId));
+    const bookGenreId = book.genreId ?? book.GenreId ?? book.genre?.id ?? book.genre?.Id ?? book.genreID;
+    const bookGenreName = String(book.genre?.name ?? book.genre?.Name ?? book.genreName ?? '').trim().toLocaleLowerCase();
+    const bookGenreNameAr = String(book.genre?.nameAr ?? book.genre?.NameAr ?? book.genreNameAr ?? '').trim().toLocaleLowerCase();
+    return selectedInterests.some(id => {
+      const selectedGenre = genres.find(genre => String(genre.id ?? genre.Id) === String(id));
+      return (bookGenreId != null && String(id) === String(bookGenreId)) ||
+        (selectedGenre && bookGenreName && bookGenreName === String(selectedGenre.name ?? selectedGenre.Name ?? '').trim().toLocaleLowerCase()) ||
+        (selectedGenre && bookGenreNameAr && bookGenreNameAr === String(selectedGenre.nameAr ?? selectedGenre.NameAr ?? '').trim().toLocaleLowerCase());
+    });
   });
   const isAdmin = (() => {
     try {
@@ -75,7 +82,14 @@ function App() {
     try { const res = await fetch(`${API}/api/reader/books/${bookId}/reading-status`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); if (!res.ok && res.status !== 204) throw new Error(t('Could not remove book.', 'تعذر حذف الكتاب.')); setReadingList(items => items.filter(item => item.id !== bookId)); loadRecommendations(); } catch (err) { setMessage(err.message); }
   }
   async function saveInterests() {
-    try { const res = await fetch(`${API}/api/reader/interests`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ genreIds: selectedInterests }) }); if (!res.ok) throw new Error(t('Could not save interests.', 'تعذر حفظ الاهتمامات.')); setMessage(t('Interests saved.', 'تم حفظ الاهتمامات.')); loadRecommendations(); } catch (err) { setMessage(err.message); }
+    try {
+      const res = await fetch(`${API}/api/reader/interests`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ genreIds: selectedInterests.map(Number) }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || t('Could not save interests.', 'تعذر حفظ الاهتمامات.'));
+      if (Array.isArray(data.genreIds)) setSelectedInterests(data.genreIds);
+      await loadRecommendations();
+      setMessage(t('Interests saved. Picked for you has been updated.', 'تم حفظ اهتماماتك وتحديث الترشيحات لك.'));
+    } catch (err) { setMessage(err.message); }
   }
   async function loadRecommendations() {
     if (!token) return;
