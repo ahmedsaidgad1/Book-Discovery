@@ -46,6 +46,22 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    db.Database.ExecuteSqlRaw(@"IF OBJECT_ID('dbo.BookReviews', 'U') IS NULL
+        CREATE TABLE dbo.BookReviews (
+            Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_BookReviews PRIMARY KEY,
+            UserId int NOT NULL,
+            BookId int NOT NULL,
+            Content nvarchar(1200) NOT NULL,
+            CreatedAt datetime2 NOT NULL,
+            UpdatedAt datetime2 NOT NULL,
+            CONSTRAINT FK_BookReviews_Users_UserId FOREIGN KEY (UserId) REFERENCES dbo.Users(Id) ON DELETE CASCADE,
+            CONSTRAINT FK_BookReviews_Books_BookId FOREIGN KEY (BookId) REFERENCES dbo.Books(Id) ON DELETE CASCADE
+        );
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BookReviews_UserId_BookId' AND object_id = OBJECT_ID('dbo.BookReviews'))
+        CREATE UNIQUE INDEX IX_BookReviews_UserId_BookId ON dbo.BookReviews(UserId, BookId);");
+    db.Database.ExecuteSqlRaw(@"UPDATE dbo.Books SET ReadingUrl = N'https://books.google.com/books?q=Atomic+Habits+James+Clear',
+        ReadingSource = N'Google Books (preview/search)'
+        WHERE Title = N'Atomic Habits' AND ReadingUrl LIKE N'%archive.org%';");
     db.Database.ExecuteSqlRaw("IF COL_LENGTH('dbo.Books', 'ReadingUrl') IS NULL ALTER TABLE dbo.Books ADD ReadingUrl nvarchar(1000) NULL; IF COL_LENGTH('dbo.Books', 'ReadingSource') IS NULL ALTER TABLE dbo.Books ADD ReadingSource nvarchar(150) NULL;");
     db.Database.ExecuteSqlRaw(@"UPDATE dbo.Books SET ReadingUrl = CASE Title
         WHEN N'The Hobbit' THEN N'https://books.google.com/books?q=The+Hobbit+J.+R.+R.+Tolkien'
