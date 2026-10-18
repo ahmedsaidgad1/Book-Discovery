@@ -11,11 +11,15 @@ public class TokenService(IConfiguration config)
     public string Create(User user)
     {
         var section = config.GetSection("Jwt");
-        var claims = new[] {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim(ClaimTypes.Email, user.Email)
+        var adminEmail = section["AdminEmail"] ?? config["Admin:Email"] ?? Environment.GetEnvironmentVariable("Admin__Email");
+        var claims = new List<Claim> {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Name),
+            new(ClaimTypes.Email, user.Email)
         };
+        if (!string.IsNullOrWhiteSpace(adminEmail) &&
+            string.Equals(user.Email, adminEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(section["Key"]!));
         var token = new JwtSecurityToken(section["Issuer"], section["Audience"], claims,
             expires: DateTime.UtcNow.AddHours(8),

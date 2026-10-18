@@ -13,7 +13,9 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<UserGenre> Interests { get; set; } = new();
     public List<Rating> Ratings { get; set; } = new();
+    public List<ReadingListItem> ReadingListItems { get; set; } = new();
 }
+
 public class Book
 {
     public int Id { get; set; }
@@ -25,9 +27,13 @@ public class Book
     [MaxLength(5)] public string Language { get; set; } = "en";
     public int? PublishedYear { get; set; }
     public int GenreId { get; set; }
+    [MaxLength(1000)] public string? ReadingUrl { get; set; }
+    [MaxLength(150)] public string? ReadingSource { get; set; }
     public Genre? Genre { get; set; }
     public List<Rating> Ratings { get; set; } = new();
+    public List<ReadingListItem> ReadingListItems { get; set; } = new();
 }
+
 public class Genre
 {
     public int Id { get; set; }
@@ -35,6 +41,7 @@ public class Genre
     [MaxLength(80)] public string NameAr { get; set; } = "";
     public List<Book> Books { get; set; } = new();
 }
+
 public class UserGenre
 {
     public int UserId { get; set; }
@@ -42,6 +49,7 @@ public class UserGenre
     public int GenreId { get; set; }
     public Genre? Genre { get; set; }
 }
+
 public class Rating
 {
     public int Id { get; set; }
@@ -52,11 +60,27 @@ public class Rating
     [Range(1, 5)] public int Score { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
+
 public class ReadingListItem
 {
     public int Id { get; set; }
     public int UserId { get; set; }
+    public User? User { get; set; }
     public int BookId { get; set; }
-    public string Status { get; set; } = "WantToRead";
+    public Book? Book { get; set; }
+    [MaxLength(20)] public string Status { get; set; } = "WantToRead";
     public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+}
+
+
+public class BookReview
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public User? User { get; set; }
+    public int BookId { get; set; }
+    public Book? Book { get; set; }
+    [MaxLength(1200)] public string Content { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

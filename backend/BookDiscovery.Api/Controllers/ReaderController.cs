@@ -15,6 +15,7 @@ public class ReaderController(AppDbContext db) : ControllerBase
     public record RatingRequest(int Score);
     public record ReadingStatusRequest(string Status);
     public record InterestsRequest(List<int> GenreIds);
+    public record ReviewRequest([System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.MaxLength(1200)] string Content);
 
     [HttpPut("books/{bookId:int}/rating")]
     public async Task<IActionResult> Rate(int bookId, RatingRequest req)
@@ -46,9 +47,58 @@ public class ReaderController(AppDbContext db) : ControllerBase
     {
         var items = await db.ReadingListItems.Where(x => x.UserId == UserId)
             .Join(db.Books.Include(b => b.Genre), i => i.BookId, b => b.Id,
-                (i, b) => new { b.Id, b.Title, b.TitleAr, b.Author, i.Status, i.AddedAt })
+                (i, b) => new { b.Id, b.Title, b.TitleAr, b.Author, GenreId = b.GenreId, GenreName = b.Genre == null ? null : b.Genre.Name, GenreNameAr = b.Genre == null ? null : b.Genre.NameAr, i.Status, i.AddedAt })
             .OrderByDescending(x => x.AddedAt).ToListAsync();
         return Ok(items);
+    }
+
+    [HttpDelete("books/{bookId:int}/reading-status")]
+    public async Task<IActionResult> RemoveFromReadingList(int bookId)
+    {
+        var item = await db.ReadingListItems.SingleOrDefaultAsync(x => x.UserId == UserId && x.BookId == bookId);
+        if (item is null) return NotFound(new { message = "Reading-list item not found." });
+        db.ReadingListItems.Remove(item);
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpGet("interests")]
+    public async Task<IActionResult> GetInterests() =>
+        Ok(await db.UserGenres.Where(x => x.UserId == UserId).Select(x => x.GenreId).ToListAsync());
+
+    [HttpGet("books/{bookId:int}/reviews")]
+    public async Task<IActionResult> Reviews(int bookId)
+    {
+        if (!await db.Books.AnyAsync(b => b.Id == bookId)) return NotFound(new { message = "Book not found." });
+        var reviews = await db.BookReviews.Where(r => r.BookId == bookId)
+            .OrderByDescending(r => r.UpdatedAt)
+            .Select(r => new { r.Id, r.UserId, UserName = r.User!.Name, r.Content, r.CreatedAt, r.UpdatedAt })
+            .ToListAsync();
+        return Ok(reviews);
+    }
+
+    [HttpPut("books/{bookId:int}/review")]
+    public async Task<IActionResult> SaveReview(int bookId, ReviewRequest req)
+    {
+        var content = req.Content?.Trim() ?? "";
+        if (content.Length == 0) return BadRequest(new { message = "Review cannot be empty." });
+        if (content.Length > 1200) return BadRequest(new { message = "Review must be 1200 characters or fewer." });
+        if (!await db.Books.AnyAsync(b => b.Id == bookId)) return NotFound(new { message = "Book not found." });
+        var review = await db.BookReviews.SingleOrDefaultAsync(r => r.UserId == UserId && r.BookId == bookId);
+        if (review is null) db.BookReviews.Add(new BookReview { UserId = UserId, BookId = bookId, Content = content });
+        else { review.Content = content; review.UpdatedAt = DateTime.UtcNow; }
+        await db.SaveChangesAsync();
+        return Ok(new { bookId, content });
+    }
+
+    [HttpDelete("books/{bookId:int}/review")]
+    public async Task<IActionResult> DeleteReview(int bookId)
+    {
+        var review = await db.BookReviews.SingleOrDefaultAsync(r => r.UserId == UserId && r.BookId == bookId);
+        if (review is null) return NotFound(new { message = "Review not found." });
+        db.BookReviews.Remove(review);
+        await db.SaveChangesAsync();
+        return NoContent();
     }
 
     [HttpPut("interests")]
@@ -76,10 +126,10 @@ public class ReaderController(AppDbContext db) : ControllerBase
         var books = await query.Where(b => !excluded.Contains(b.Id))
             .OrderByDescending(b => b.Ratings.Count == 0 ? 0 : b.Ratings.Average(r => r.Score))
             .ThenBy(b => b.Title).Take(10)
-            .Select(b => new { b.Id, b.Title, b.TitleAr, b.Author, b.Description, b.DescriptionAr,
-                Genre = b.Genre == null ? null : new { b.Genre.Name, b.Genre.NameAr },
+            .Select(b => new { b.Id, b.Title, b.TitleAr, b.Author, b.Description, b.DescriptionAr, b.ReadingUrl, b.ReadingSource,
+                Genre = b.Genre == null ? null : new { b.Genre.Id, b.Genre.Name, b.Genre.NameAr },
                 Reason = interests.Contains(b.GenreId) ? "Matches your interests" : "Popular discovery",
-                AverageRating = b.Ratings.Any() ? b.Ratings.Average(r => r.Score) : 0 })
+                AverageRating = b.Ratings.Any() ? b.Ratings.Average(r => r.Score) : 0, RatingCount = b.Ratings.Count })
             .ToListAsync();
         return Ok(books);
     }
