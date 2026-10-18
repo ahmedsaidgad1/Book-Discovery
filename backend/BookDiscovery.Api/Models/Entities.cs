@@ -71,3 +71,16 @@ public class ReadingListItem
     [MaxLength(20)] public string Status { get; set; } = "WantToRead";
     public DateTime AddedAt { get; set; } = DateTime.UtcNow;
 }
+
+
+public class BookReview
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public User? User { get; set; }
+    public int BookId { get; set; }
+    public Book? Book { get; set; }
+    [MaxLength(1200)] public string Content { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
