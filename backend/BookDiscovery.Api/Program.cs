@@ -53,7 +53,11 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
-    db.Database.ExecuteSqlRaw("IF COL_LENGTH('dbo.Books', 'ReadingUrl') IS NULL ALTER TABLE dbo.Books ADD ReadingUrl nvarchar(1000) NULL; IF COL_LENGTH('dbo.Books', 'ReadingSource') IS NULL ALTER TABLE dbo.Books ADD ReadingSource nvarchar(150) NULL;");
+    // Add legacy columns in separate SQL batches before any statements reference them.
+    // Keeping each ALTER in its own batch avoids SQL Server compiling later statements
+    // against a Books schema that does not yet contain these columns.
+    db.Database.ExecuteSqlRaw("IF COL_LENGTH('dbo.Books', 'ReadingUrl') IS NULL ALTER TABLE dbo.Books ADD ReadingUrl nvarchar(1000) NULL;");
+    db.Database.ExecuteSqlRaw("IF COL_LENGTH('dbo.Books', 'ReadingSource') IS NULL ALTER TABLE dbo.Books ADD ReadingSource nvarchar(150) NULL;");
     db.Database.ExecuteSqlRaw(@"IF OBJECT_ID('dbo.BookReviews', 'U') IS NULL
         CREATE TABLE dbo.BookReviews (
             Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_BookReviews PRIMARY KEY,
